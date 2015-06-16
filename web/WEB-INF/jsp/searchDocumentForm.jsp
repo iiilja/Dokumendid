@@ -27,6 +27,7 @@
             <input type="text" name="docTypeId" value="${docType.docType}" hidden>
             
             <table border=1 cellpadding=2 cellspacing=1>
+                <tr><td>Document id</td><td><input type="text" name="docId" /></td></tr>
                 <tr><td>Document name</td><td><input type="text" name="docName" /></td></tr>
                 <tr><td>Document description</td><td><input type="text" name="docDescription"/></td></tr>
                 <tr>
@@ -36,6 +37,7 @@
                             <c:forEach var="docStatusType" items="${docStatusTypesList}" >
                                 <option value="${docStatusType.docStatusType}">${docStatusType.typeName}</option>
                             </c:forEach>
+                            <option value="-1" selected>not chosen</option>
                         </select>
                     </td>
                 </tr>
@@ -46,6 +48,7 @@
                             <c:forEach var="docCatalog" items="${docCatalogList}" >
                                 <option value="${docCatalog.docCatalog}">${docCatalog.name}</option>
                             </c:forEach>
+                            <option value="-1" selected>not chosen</option>
                         </select>
                     </td>
                 </tr>
@@ -60,15 +63,15 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>Doc Subject Relation</td>
-                    <td><select name="docSubjectRelationType">
-                            <c:forEach var="relationType" items="${docSubjectRelationTypes}" >
-                                <option value="${relationType.docSubjectRelationType}">${relationType.typeName}</option>
-                            </c:forEach>
-                        </select>
+                    <td>Doc last changer</td>
+                    <td>
+                        <input type="text" name="changedEmployeeId" id="changedEmployeeId" hidden/>
+                        <input type="text" id="changedEmployeeName" disabled/>
+                        <input type="text" id="changedEmployeeInput"/>
+                        <button type="button" onclick="searchEmployee()">Search</button>
                     </td>
-                    
                 </tr>
+                <tr><td>Document attribute</td><td><input type="text" name="someAttributeText"/></td></tr>
             </table><br/>
 
             

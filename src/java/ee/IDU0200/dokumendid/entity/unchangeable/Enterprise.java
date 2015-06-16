@@ -28,7 +28,7 @@ import javax.persistence.TemporalType;
 @NamedQueries({
     @NamedQuery(name = "Enterprise.findAll", query = "SELECT e FROM Enterprise e"),
     @NamedQuery(name = "Enterprise.findByEnterprise", query = "SELECT e FROM Enterprise e WHERE e.enterprise = :enterprise"),
-    @NamedQuery(name = "Enterprise.findByName", query = "SELECT e FROM Enterprise e WHERE e.name = :name"),
+    @NamedQuery(name = "Enterprise.findByName", query = "SELECT e FROM Enterprise e WHERE UPPER(e.name) = UPPER(:name)"),
     @NamedQuery(name = "Enterprise.findByFullName", query = "SELECT e FROM Enterprise e WHERE e.fullName = :fullName"),
     @NamedQuery(name = "Enterprise.findByCreatedBy", query = "SELECT e FROM Enterprise e WHERE e.createdBy = :createdBy"),
     @NamedQuery(name = "Enterprise.findByUpdatedBy", query = "SELECT e FROM Enterprise e WHERE e.updatedBy = :updatedBy"),

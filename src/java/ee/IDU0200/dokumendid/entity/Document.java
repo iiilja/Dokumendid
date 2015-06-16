@@ -175,6 +175,5 @@ public class Document implements Serializable {
     @Override
     public String toString() {
         return "ee.IDU0200.dokumendid.entity.Document[ document=" + document + " ]";
-    }
-    
+    }   
 }

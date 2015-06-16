@@ -29,7 +29,7 @@ import javax.persistence.TemporalType;
     @NamedQuery(name = "Person.findAll", query = "SELECT p FROM Person p"),
     @NamedQuery(name = "Person.findByPerson", query = "SELECT p FROM Person p WHERE p.person = :person"),
     @NamedQuery(name = "Person.findByFirstName", query = "SELECT p FROM Person p WHERE p.firstName = :firstName"),
-    @NamedQuery(name = "Person.findByLastName", query = "SELECT p FROM Person p WHERE p.lastName = :lastName"),
+    @NamedQuery(name = "Person.findByLastName", query = "SELECT p FROM Person p WHERE UPPER(p.lastName) = UPPER(:lastName)"),
     @NamedQuery(name = "Person.findByIdentityCode", query = "SELECT p FROM Person p WHERE p.identityCode = :identityCode"),
     @NamedQuery(name = "Person.findByBirthDate", query = "SELECT p FROM Person p WHERE p.birthDate = :birthDate"),
     @NamedQuery(name = "Person.findByCreatedBy", query = "SELECT p FROM Person p WHERE p.createdBy = :createdBy"),

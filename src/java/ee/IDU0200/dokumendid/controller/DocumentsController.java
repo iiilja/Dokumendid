@@ -16,9 +16,11 @@ import ee.IDU0200.dokumendid.entity.unchangeable.AtrTypeSelectionValue;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocAttributeType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocType;
+import ee.IDU0200.dokumendid.entity.unchangeable.DocTypeAttribute;
 import ee.IDU0200.dokumendid.entity.unchangeable.Enterprise;
 import ee.IDU0200.dokumendid.entity.unchangeable.Person;
 import ee.IDU0200.dokumendid.service.DocumentService;
+import ee.IDU0200.dokumendid.util.ListCleaner;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -56,6 +58,8 @@ public class DocumentsController {
     private static final int DATA_TYPE_NUMBER = 2;
     private static final int DATA_TYPE_DATE = 3;
     private static final int DATA_TYPE_CHOICE = 4;
+    private static final String REQUIRED_TRUE = "Y";
+    private static final String REQUIRED_FALSE = "N";
     
     private static final int SUBJECT_TYPE_PERSON = 1;
     private static final int SUBJECT_TYPE_ENTERPRISE = 2;
@@ -114,6 +118,9 @@ public class DocumentsController {
             DocStatus docStatus = createDocStatus(json, document.getDocument(), userId);
             DocumentDocType documentDocType = createDocumentDocType(json, document.getDocument());
             DocumentDocCatalog documentDocCatalog = createDocumentDocCatalog(json, document.getDocument());
+            DocCatalog docCatalog = documentService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
+            docCatalog.setContentUpdated(new Date());
+            docCatalog.setContentUpdatedBy(userId);
             DocSubject docSubject = createDocSubjectFromJSON(json,document.getDocument());
             List<DocAttribute> docAttributes = createDocAttributesFromJSON(json,document.getDocument());
             json = new JSONObject();
@@ -232,6 +239,70 @@ public class DocumentsController {
         return null;
     }
     
+    private List<Document> searchDocument(JSONObject json) throws JSONException{
+        List<Document> documents = new ArrayList<>();
+        JSONObject errors = new JSONObject();
+//        dokumendi (andmebaasi) id järgi
+        if (json.has("docId")){ 
+            try {
+                long id = Long.parseLong(json.getString("docId"));
+                Document document = documentService.findDocumentById(id);
+                if (document != null) documents.add(document);
+            } catch (NumberFormatException e){
+                errors.put("docId", "Specify docId");
+            }
+        }
+//        dokumendi staatuse järgi
+        if (json.has("docStatusType")){ 
+            try {
+                long id = Long.parseLong(json.getString("docStatusType"));
+                documents.addAll(documentService.findDocumentsByDocStatusType(id));
+            } catch (NumberFormatException e){
+                errors.put("docStatusType", "Specify docStatusType");
+            }
+        }
+//        kataloogi nime järgi kus dokument asub
+        if (json.has("docCatalog")){ 
+            try {
+                long id = Long.parseLong(json.getString("docCatalog"));
+                documents.addAll(documentService.findDocumentsByDocCatalog(id));
+            } catch (NumberFormatException e){
+                errors.put("docCatalog", "Specify docCatalog");
+            }
+        }
+//        dokumendi nime järgi 
+        if (json.has("docName") ){
+            documents.addAll(documentService.findDocumentsByName(json.getString("docName")));
+        }
+//        dokumendi kirjelduse järgi
+        if (json.has("docDescription") ){
+            documents.addAll(documentService.findDocumentsByDesctiption(json.getString("docDescription")));
+        }
+//        dokumentidega seotud subjektide nime järgi ([enterpise].name, [person].last_name)
+        if (json.has("subjectId") && json.has("subjectType")){
+            try {
+                long subjectId = Long.parseLong(json.getString("subjectId"));
+                long subjectType = Long.parseLong(json.getString("subjectType"));
+                documents.addAll(documentService.findDocumentsByDocSubject(subjectId, subjectType));
+            } catch (NumberFormatException e){
+                errors.put("docCatalog", "Specify docCatalog");
+            }
+        }
+//        viimase muutja perekonnanime järgi ([employee]->[person].last_name)
+        if (!json.has("changedEmployeeId")){
+            try {
+                long changedEmployeeId = Long.parseLong(json.getString("changedEmployeeId"));
+                documents.addAll(documentService.findDocumentsByChanger(changedEmployeeId));
+            } catch (NumberFormatException e){
+                errors.put("docCatalog", "Specify docCatalog");
+            }
+        }
+        if (!json.has("someAttributeText")){
+            documents.addAll(documentService.findDocumentsBySomeAttributeText(json.getString("someAttributeText")));
+        }
+        return ListCleaner.cleanListFromEqualObjects(documents);
+    }
+    
     private JSONObject validateData(JSONObject json) throws JSONException{
         boolean OK = true;
         JSONObject errors = new JSONObject();
@@ -265,6 +336,11 @@ public class DocumentsController {
             DocType docType = documentService.findDocTypeById(docTypeId);
             List<DocAttributeType> attributes = documentService.findDocAttributeTypesByDocTypeId(docType.getDocType());
             for (DocAttributeType attribute : attributes) {
+                DocTypeAttribute docTypeAttribute = documentService.findDocTypeAttributeTypeBy(docTypeId, attribute.getDocAttributeType());
+                if (REQUIRED_FALSE.equals(docTypeAttribute.getRequired())){
+                    System.out.println(attribute.getTypeName() + " not required");
+                    continue;
+                }
                 String docAttributeTypeId = attribute.getDocAttributeType() + "";
                 if (json.has(docAttributeTypeId)) {
                     String data = json.getString(docAttributeTypeId);
@@ -292,6 +368,7 @@ public class DocumentsController {
                         }
                     }
                 } else {
+                    errors.put(docAttributeTypeId, "Please insert field value");
                     OK = false;
                 }
             }
@@ -314,13 +391,19 @@ public class DocumentsController {
             String docAttributeTypeId = attributeType.getDocAttributeType() + "";
             String data = json.getString(docAttributeTypeId);
             
+            DocTypeAttribute docTypeAttribute = documentService.findDocTypeAttributeTypeBy(docTypeId, attributeType.getDocAttributeType());
+            
             DocAttribute attribute = new DocAttribute();
             attribute.setDocAttributeTypeFk(attributeType.getDocAttributeType());
             attribute.setTypeName(attributeType.getTypeName());
             attribute.setDataType(attributeType.getDataTypeFk());
             attribute.setDocumentFk(documentFk);
+            attribute.setRequired(docTypeAttribute.getRequired());
+            attribute.setOrderby(docTypeAttribute.getOrderby());
             if (attributeType.getDataTypeFk() == DATA_TYPE_CHOICE) {
                 attribute.setAtrTypeSelectionValueFk(Long.parseLong(data));
+                AtrTypeSelectionValue value = documentService.findAtrTypeSelectionValueById(Long.parseLong(data));
+                data = value.getValueText();
             } else if (attributeType.getDataTypeFk() == DATA_TYPE_NUMBER) {
                 attribute.setValueNumber(Integer.parseInt(data));
             } else if (attributeType.getDataTypeFk() == DATA_TYPE_DATE){
@@ -333,6 +416,7 @@ public class DocumentsController {
                     ex.printStackTrace();
                 }
             }
+            attribute.setValueText(data);
         }
         return attributes;
     }
