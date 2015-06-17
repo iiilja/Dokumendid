@@ -27,7 +27,7 @@
             <input type="text" name="docTypeId" value="${docType.docType}" hidden>
             
             <table border=1 cellpadding=2 cellspacing=1>
-                <tr><td>Document id</td><td><input type="text" name="docId" /></td></tr>
+                <tr><td>Document id</td><td><input type="text" name="docId"/></td></tr>
                 <tr><td>Document name</td><td><input type="text" name="docName" /></td></tr>
                 <tr><td>Document description</td><td><input type="text" name="docDescription"/></td></tr>
                 <tr>
@@ -105,22 +105,50 @@
             </table>
             <h4 onclick="createString()">Search</h4>
         </form>
+            
+            <div id="documents">
+                
+            </div>
 
     </body>
     <script type="text/javascript">
+        var myHost = "http://localhost:8080/documents/service/${userId}"
         function createString(){
             var formData = parseForm($('#createDocumentForm'));
             console.log("Form data"  + formData);
             $(".errorsClass").text("");
-            var url = "http://localhost:8080/documents/service/${userId}/searchDocuments";
+            var url = myHost + "/searchDocuments";
             $.getJSON(url,{documentData : formData} ,function (data) {
-                if(data.OK){
+                if(data.documents){
                     console.log("OK");
-                    document.location.href = "http://mobile.mysite.com";
-                } else {
-                    jQuery.each(data, function(name, val) {
-                        $("#" + name).append(val);
-                    });
+                    console.log(data.documents);
+                    var div = $("#documents").text("");
+                    var table = document.createElement("table");
+                    table.setAttribute("border", 1);
+                    var doc;
+                    for(var i = 0; i < data.documents.length; i++){
+                        doc = data.documents[i];
+                        console.log(doc);
+                        var tr = document.createElement("tr");
+                        
+                        var td1 = document.createElement("td");
+                        var td2 = document.createElement("td");
+                        var td3 = document.createElement("td");
+                        var td4 = document.createElement("td");
+                        var a = document.createElement("a");
+                        td1.innerHTML= doc.docId;
+                        td2.innerHTML=doc.docName;
+                        td3.innerHTML =doc.docDescription;
+                        a.setAttribute("href", myHost + "/document?id="+doc.docId);
+                        a.innerHTML = "Look / change";
+                        td4.appendChild(a);
+                        tr.appendChild(td1);
+                        tr.appendChild(td2);
+                        tr.appendChild(td3);
+                        tr.appendChild(td4);
+                        table.appendChild(tr);
+                    }
+                    div.append(table);
                 }
             });
             return false;
@@ -128,13 +156,27 @@
         
         function searchPerson(){
             var name = $("#subjectInput").val();
-            var url = "http://localhost:8080/documents/service/${userId}/searchSubject";
+            var url = myHost + "/searchSubject";
             $.getJSON(url,{subjectName : name} ,function (data) {
                 if(data.OK){
                     console.log("OK");
                     $("#subjectName").val(data.subjectName);
                     $("#subjectId").val(data.subjectId);
                     $("#subjectType").val(data.subjectType);
+                } else {
+                    alert("not found");
+                }
+            });
+        }
+        
+        function searchEmployee(){
+            var name = $("#changedEmployeeInput").val();
+            var url = myHost + "/searchEmployee";
+            $.getJSON(url,{employeeName : name} ,function (data) {
+                if(data.OK){
+                    console.log("OK");
+                    $("#changedEmployeeName").val(data.changedEmployeeName);
+                    $("#changedEmployeeId").val(data.changedEmployeeId);
                 } else {
                     alert("not found");
                 }

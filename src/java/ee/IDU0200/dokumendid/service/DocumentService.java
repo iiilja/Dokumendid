@@ -13,6 +13,7 @@ import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocSubjectRelationType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocTypeAttribute;
+import ee.IDU0200.dokumendid.entity.unchangeable.Employee;
 import ee.IDU0200.dokumendid.entity.unchangeable.Enterprise;
 import ee.IDU0200.dokumendid.entity.unchangeable.Person;
 import java.util.Collection;
@@ -39,6 +40,7 @@ public interface DocumentService {
     public List<DocCatalog> findDocCatalogs();
     public DocCatalog findDocCatalogById(long docCatalogFk);
 
+    public Person findPersonById(Long personFk);
     public Person findPersonWithLastName(String subjectName);
 
     public Enterprise findEnterpriseByName(String subjectName);
@@ -56,6 +58,13 @@ public interface DocumentService {
     public List<Document> findDocumentsByDocSubject(long subjectId, long subjectType);
     public List<Document> findDocumentsByChanger(long changedEmployeeId);
     public List<Document> findDocumentsBySomeAttributeText(String string);
+
+
+    public Employee findEmployeeWithLastName(String employeeLastName);
+    
+    public Object saveEntity(Object object);
+
+    public void updateEntity(Object object);
 
 
 }

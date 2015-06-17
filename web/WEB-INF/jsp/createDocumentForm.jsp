@@ -105,15 +105,16 @@
 
     </body>
     <script type="text/javascript">
+        var myHost = "http://localhost:8080/documents/service/${userId}"
         function createString(){
             var formData = parseForm($('#createDocumentForm'));
             console.log("Form data"  + formData);
             $(".errorsClass").text("");
-            var url = "http://localhost:8080/documents/service/${userId}/createDocument";
+            var url = myHost + "/createDocument";
             $.getJSON(url,{documentData : formData} ,function (data) {
                 if(data.OK){
                     console.log("OK");
-                    document.location.href = "http://mobile.mysite.com";
+                    document.location.href = myHost + "/document?id=" + data.docId;
                 } else {
                     jQuery.each(data, function(name, val) {
                         $("#" + name).append(val);
@@ -125,7 +126,7 @@
         
         function searchPerson(){
             var name = $("#subjectInput").val();
-            var url = "http://localhost:8080/documents/service/${userId}/searchSubject";
+            var url = myHost + "searchSubject";
             $.getJSON(url,{subjectName : name} ,function (data) {
                 if(data.OK){
                     console.log("OK");

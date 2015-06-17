@@ -13,6 +13,7 @@ import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocSubjectRelationType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocTypeAttribute;
+import ee.IDU0200.dokumendid.entity.unchangeable.Employee;
 import ee.IDU0200.dokumendid.entity.unchangeable.Enterprise;
 import ee.IDU0200.dokumendid.entity.unchangeable.Person;
 import java.util.Collection;
@@ -133,7 +134,7 @@ public class DocumentServiceImpl implements DocumentService{
     public Document findDocumentById(long id) {
         Session session = sessionFactory.getCurrentSession();
         return (Document) session.getNamedQuery("Document.findByDocument").
-                setParameter("findByDocument", id).uniqueResult();
+                setParameter("document", id).uniqueResult();
     }
 
     @Override
@@ -154,7 +155,7 @@ public class DocumentServiceImpl implements DocumentService{
         Query query = session.createSQLQuery(
             "SELECT document.* " +
             "FROM document INNER JOIN document_doc_catalog " +
-            "ON document.document =  document_doc_catalog.document_fk" +
+            "ON document.document =  document_doc_catalog.document_fk " +
             "WHERE document_doc_catalog.doc_catalog_fk = :doc_catalog_fk").addEntity(Document.class);
         query.setParameter("doc_catalog_fk", docCatalog);
         return query.list();
@@ -163,8 +164,10 @@ public class DocumentServiceImpl implements DocumentService{
     @Override
     public List<Document> findDocumentsByName(String name) {
         Session session = sessionFactory.getCurrentSession();
-        return session.getNamedQuery("Document.findByName").
-                setParameter("name", name).list();
+        return session.createSQLQuery(
+            "SELECT * FROM document " +
+            "WHERE (to_tsvector(name) @@ to_tsquery(:name))").addEntity(Document.class)
+                .setParameter("name", name).list();
     }
 
     @Override
@@ -208,6 +211,37 @@ public class DocumentServiceImpl implements DocumentService{
         query.setParameter("someText", string);
         return query.list();
     }
+
+    @Override
+    public Person findPersonById(Long personFk) {
+        Session session = sessionFactory.getCurrentSession();
+        return (Person) session.getNamedQuery("Person.findByPerson").
+                setParameter("person", personFk).uniqueResult();
+    }
+
+    @Override
+    public Employee findEmployeeWithLastName(String employeeLastName) {
+        Session session = sessionFactory.getCurrentSession();
+        Query query = session.createSQLQuery(
+            "SELECT employee.* \n" +
+            "FROM employee INNER JOIN person \n" +
+            "ON employee.person_fk = person.person \n" +
+            "WHERE UPPER(person.last_name) = UPPER(:lastName)").addEntity(Employee.class);
+        query.setParameter("lastName", employeeLastName);
+        return (Employee) query.uniqueResult();
+    }
+
+    @Override
+    public Object saveEntity(Object object) {
+        return sessionFactory.getCurrentSession().save(object);
+    }
+
+    @Override
+    public void updateEntity(Object object) {
+        sessionFactory.getCurrentSession().update(object);
+    }
+    
+    
 
 
     

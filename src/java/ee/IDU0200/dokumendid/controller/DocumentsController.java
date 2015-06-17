@@ -17,6 +17,7 @@ import ee.IDU0200.dokumendid.entity.unchangeable.DocAttributeType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocTypeAttribute;
+import ee.IDU0200.dokumendid.entity.unchangeable.Employee;
 import ee.IDU0200.dokumendid.entity.unchangeable.Enterprise;
 import ee.IDU0200.dokumendid.entity.unchangeable.Person;
 import ee.IDU0200.dokumendid.service.DocumentService;
@@ -115,16 +116,26 @@ public class DocumentsController {
         
         if (errors == null) {
             Document document = createDocument(json, userId);
+            documentService.saveEntity(document);
             DocStatus docStatus = createDocStatus(json, document.getDocument(), userId);
+            documentService.saveEntity(docStatus);
             DocumentDocType documentDocType = createDocumentDocType(json, document.getDocument());
+            documentService.saveEntity(documentDocType);
             DocumentDocCatalog documentDocCatalog = createDocumentDocCatalog(json, document.getDocument());
+            documentService.saveEntity(documentDocCatalog);
             DocCatalog docCatalog = documentService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
             docCatalog.setContentUpdated(new Date());
             docCatalog.setContentUpdatedBy(userId);
+            documentService.updateEntity(docCatalog);
             DocSubject docSubject = createDocSubjectFromJSON(json,document.getDocument());
+            documentService.saveEntity(docSubject);
             List<DocAttribute> docAttributes = createDocAttributesFromJSON(json,document.getDocument());
+            for (DocAttribute docAttribute : docAttributes) {
+                documentService.saveEntity(docAttribute);
+            }
             json = new JSONObject();
             json.put("OK", true);
+            json.put("docId", document.getDocument());
         } else {
             json = errors;
         }
@@ -154,6 +165,24 @@ public class DocumentsController {
                 json.put("subjectId", enterprise.getEnterprise());
                 json.put("subjectName", enterprise.getFullName());
             }
+        }
+        response.setStatus(HttpServletResponse.SC_OK);
+        return json.toString();
+    }
+    
+    @RequestMapping(value = "/{userId}/searchEmployee")
+    public @ResponseBody String findEmployee(
+            @PathVariable("userId") long userId,
+            @RequestParam String employeeName,
+            HttpServletRequest request,
+            HttpServletResponse response) throws JSONException{
+        JSONObject json = new JSONObject();
+        Employee employee = documentService.findEmployeeWithLastName(employeeName);
+        if (employee != null) {
+            Person person = documentService.findPersonById(employee.getPersonFk());
+            json.put("OK", true);
+            json.put("changedEmployeeId", employee.getEmployee());
+            json.put("changedEmployeeName", person.getFirstName() + " " + person.getLastName());
         }
         response.setStatus(HttpServletResponse.SC_OK);
         return json.toString();
@@ -195,36 +224,27 @@ public class DocumentsController {
     }
     
     @RequestMapping(value = "/{userId}/searchDocuments")
-    public ModelAndView findDocuments(
+    public @ResponseBody String findDocuments(
             @PathVariable("userId") String userId,
-            @RequestParam(required = false) Long docTypeId,
+            @RequestParam String documentData,
             HttpServletRequest request,
-            HttpServletResponse response){
-        List<DocType> docTypes = documentService.findAllDocTypes();
-        
-        System.out.println("DocTypes list contains " + docTypes.size());
-        
-        DocType docType = findDoctypeFromListById(docTypes, docTypeId);
-        Map<String, Object> model = new HashMap<>();
-        if (docType != null) {
-            docType.setSelected(true);
-            model.put("docType", docType);
-            List<DocAttributeType> attributes = documentService.findDocAttributeTypesByDocTypeId(docType.getDocType());
-            for (DocAttributeType attribute : attributes) {
-                if (attribute.getDataTypeFk() == DATA_TYPE_CHOICE) {
-                    List<AtrTypeSelectionValue> selectionValues 
-                            = documentService.findAtrTypeSelectionValuesByDocAttributeTypeId(attribute.getDocAttributeType());
-                    attribute.setSelectionValues(selectionValues);
-                }
-            }
-            model.put("attributes", attributes);
-        }
-        model.put("docTypesList", docTypes);
-        model.put("docStatusTypesList", documentService.findDocStatusTypes());
-        model.put("docCatalogList", documentService.findDocCatalogs());
-        model.put("docSubjectRelationTypes", documentService.findDocSubjectRelationTypes());
-        model.put("userId", userId);
-        return new ModelAndView("searchDocumentForm",model);
+            HttpServletResponse response) throws JSONException{
+        List<Document> docs = searchDocument(new JSONObject(documentData));
+        System.out.println(docs.size());
+        response.setStatus(HttpServletResponse.SC_OK);
+        return createJSONFromDocuments(docs).toString();
+    }
+    
+    @RequestMapping(value = "/{userId}/document")
+    public @ResponseBody String findDocuments(
+            @PathVariable("userId") String userId,
+            @RequestParam long id,
+            HttpServletRequest request,
+            HttpServletResponse response) throws JSONException{
+//        List<Document> docs = searchDocument(new JSONObject(documentData));
+//        System.out.println(docs.size());
+//        response.setStatus(HttpServletResponse.SC_OK);
+        return "";
     }
     
     private DocType findDoctypeFromListById(List<DocType> docTypes, Long docTypeId){
@@ -289,7 +309,7 @@ public class DocumentsController {
             }
         }
 //        viimase muutja perekonnanime järgi ([employee]->[person].last_name)
-        if (!json.has("changedEmployeeId")){
+        if (json.has("changedEmployeeId")){
             try {
                 long changedEmployeeId = Long.parseLong(json.getString("changedEmployeeId"));
                 documents.addAll(documentService.findDocumentsByChanger(changedEmployeeId));
@@ -297,7 +317,7 @@ public class DocumentsController {
                 errors.put("docCatalog", "Specify docCatalog");
             }
         }
-        if (!json.has("someAttributeText")){
+        if (json.has("someAttributeText")){
             documents.addAll(documentService.findDocumentsBySomeAttributeText(json.getString("someAttributeText")));
         }
         return ListCleaner.cleanListFromEqualObjects(documents);
@@ -389,6 +409,8 @@ public class DocumentsController {
         List<DocAttribute> attributes = new ArrayList<>();
         for (DocAttributeType attributeType : attributeTypes) {
             String docAttributeTypeId = attributeType.getDocAttributeType() + "";
+            if (!json.has(docAttributeTypeId)) continue;
+            
             String data = json.getString(docAttributeTypeId);
             
             DocTypeAttribute docTypeAttribute = documentService.findDocTypeAttributeTypeBy(docTypeId, attributeType.getDocAttributeType());
@@ -422,7 +444,7 @@ public class DocumentsController {
     }
 
     private Document createDocument(JSONObject json, long userId) throws JSONException {
-        Document document = new Document(Long.MIN_VALUE);
+        Document document = new Document();
         document.setName(json.getString("docName"));
         document.setDescription(json.getString("docDescription"));
         document.setDocStatusTypeFk(Long.parseLong(json.getString("docStatusType")));
@@ -464,5 +486,19 @@ public class DocumentsController {
         subject.setDocSubjectRelationTypeFk(Long.parseLong(json.getString("docSubjectRelationType")));
         subject.setDocumentFk(document);
         return subject;
+    }
+    
+    private static JSONObject createJSONFromDocuments(List<Document> documents) throws JSONException{
+        JSONObject docsJSON = new JSONObject();
+        JSONArray docsArray = new JSONArray();
+        for (Document document : documents) {
+            JSONObject docJSON = new JSONObject();
+            docJSON.put("docId", document.getDocument());
+            docJSON.put("docName", document.getName());
+            docJSON.put("docDescription", document.getDescription());
+            docsArray.put(docJSON);
+        }
+        docsJSON.put("documents", docsArray);
+        return docsJSON;
     }
 }
