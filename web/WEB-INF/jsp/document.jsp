@@ -14,10 +14,11 @@
         
         <form id="createDocumentForm">
             <input type="text" name="docTypeId" value="${docType.docType}" hidden>
+            Document type is <input type="text" name="docTypeId" value="${docType.typeName}" disabled>
             
             <table border=1 cellpadding=2 cellspacing=1>
-                <tr><td>Document name<b class="errorsClass" id="docName"></td><td><input type="text" name="docName" value="" /></td></tr>
-                <tr><td>Document description<b class="errorsClass" id="docDescription"></td><td><input type="text" name="docDescription"/></td></tr>
+                <tr><td>Document name<b class="errorsClass" id="docName"></td><td><input type="text" name="docName" value="${document.name}" /></td></tr>
+                <tr><td>Document description<b class="errorsClass" id="docDescription"></td><td><input type="text" name="docDescription" value="${document.description}"/></td></tr>
                 <tr>
                     <td>Document status<b class="errorsClass" id="docStatusType"></td>
                     <td>
@@ -33,7 +34,7 @@
                     <td>
                         <select name="docCatalog">
                             <c:forEach var="docCatalog" items="${docCatalogList}" >
-                                <option value="${docCatalog.docCatalog}">${docCatalog.name}</option>
+                                <option value="${docCatalog.docCatalog}" ${docStatusType.selected? "selected": ""}>${docCatalog.name}</option>
                             </c:forEach>
                         </select>
                     </td>
@@ -41,9 +42,9 @@
                 <tr>
                     <td>Doc Subject<b class="errorsClass" id="subject"></td>
                     <td>
-                        <input type="text" name="subjectId" id="subjectId" hidden/>
-                        <input type="text" name="subjectType" id="subjectType" hidden/>
-                        <input type="text" id="subjectName" disabled/>
+                        <input type="text" name="subjectId" id="subjectId" value="${docSubject.docSubject}" hidden/>
+                        <input type="text" name="subjectType" id="subjectType" value="${docSubject.docSubjectTypeFk}" hidden/>
+                        <input type="text" id="subjectName" disabled value="${docSubject.fullName}"/>
                         <input type="text" id="subjectInput"/>
                         <button type="button" onclick="searchPerson()">Search</button>
                     </td>
@@ -52,7 +53,7 @@
                     <td>Doc Subject Relation</td>
                     <td><select name="docSubjectRelationType">
                             <c:forEach var="relationType" items="${docSubjectRelationTypes}" >
-                                <option value="${relationType.docSubjectRelationType}">${relationType.typeName}</option>
+                                <option value="${relationType.docSubjectRelationType}" ${relationType.selected? "selected": ""}>${relationType.typeName}</option>
                             </c:forEach>
                         </select>
                     </td>
@@ -75,7 +76,7 @@
                         <TD>
                             <c:choose>
                                 <c:when test="${attributeType.selectionValues == null}">
-                                    <input type="text" name="${attributeType.docAttributeType}">
+                                    <input type="text" name="${attributeType.docAttributeType}" value="${attributeType.value}">
                                 </c:when>
                                 <c:otherwise>
                                     <select name = "${attributeType.docAttributeType}">
@@ -89,7 +90,8 @@
                     </c:forEach>
                 </TR>
             </table>
-            <h4 onclick="createString()">Create</h4>
+            <br/>
+            <button type="button" onclick="createString()">Change</button>
         </form>
 
     </body>
@@ -99,7 +101,7 @@
             var formData = parseForm($('#createDocumentForm'));
             console.log("Form data"  + formData);
             $(".errorsClass").text("");
-            var url = myHost + "/createDocument";
+            var url = myHost + "/updateDocument";
             $.getJSON(url,{documentData : formData} ,function (data) {
                 if(data.OK){
                     console.log("OK");

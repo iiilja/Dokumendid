@@ -144,6 +144,44 @@ public class DocumentsController {
         return json.toString();
     }
     
+    @RequestMapping(value = "/{userId}/updateDocument")
+    public @ResponseBody String updateDocument(
+            @PathVariable("userId") long userId,
+            @RequestParam String documentData,
+            HttpServletRequest request,
+            HttpServletResponse response) throws JSONException{
+        JSONObject json = new JSONObject(documentData);
+        JSONObject errors = validateData(json);
+        
+        if (errors == null) {
+            Document document = createDocument(json, userId);
+            docService.updateEntity(document);
+            DocStatus docStatus = createDocStatus(json, document.getDocument(), userId);
+            docService.updateEntity(docStatus);
+            DocumentDocType documentDocType = createDocumentDocType(json, document.getDocument());
+            docService.updateEntity(documentDocType);
+            DocumentDocCatalog documentDocCatalog = createDocumentDocCatalog(json, document.getDocument());
+            docService.updateEntity(documentDocCatalog);
+            DocCatalog docCatalog = docService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
+            docCatalog.setContentUpdated(new Date());
+            docCatalog.setContentUpdatedBy(userId);
+            docService.updateEntity(docCatalog);
+            DocSubject docSubject = createDocSubjectFromJSON(json,document.getDocument());
+            docService.saveEntity(docSubject);
+            List<DocAttribute> docAttributes = createDocAttributesFromJSON(json,document.getDocument());
+            for (DocAttribute docAttribute : docAttributes) {
+                docService.updateEntity(docAttribute);
+            }
+            json = new JSONObject();
+            json.put("OK", true);
+            json.put("docId", document.getDocument());
+        } else {
+            json = errors;
+        }
+        response.setStatus(HttpServletResponse.SC_OK);
+        return json.toString();
+    }
+    
     
     @RequestMapping(value = "/{userId}/searchSubject")
     public @ResponseBody String findSubject(
@@ -258,7 +296,7 @@ public class DocumentsController {
             
             DocStatus docStatus = docService.findDocstatusByDocId(id);
             List<DocStatusType> statusTypes = docService.findDocStatusTypes();
-            selectDocStatusType(statusTypes, docStatus.getDocStatusTypeFk());
+            selectDocStatusType(statusTypes, docStatus != null ? docStatus.getDocStatusTypeFk() : null);
             
             DocumentDocCatalog documentDocCatalog = docService.findDocumentDocCatalogByDocumentId(id);
             DocCatalog docCatalog = docService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
@@ -266,47 +304,52 @@ public class DocumentsController {
             selectDocCatalog(catalogs, docCatalog.getDocCatalog());
             
             DocSubject docSubject = docService.findDocsubjectByDocumentId(id);
-            if (docSubject.getDocSubjectTypeFk() == SUBJECT_TYPE_PERSON) {
-                Person person = docService.findPersonById(docSubject.getSubjectFk());
-                docSubject.setFullName(person.getFullName());
-            } else {
-                Enterprise enterprise = docService.findEnterpriseById(docSubject.getSubjectFk());
-                docSubject.setFullName(enterprise.getFullName());
-            }
-            
             List<DocSubjectRelationType> relationTypes = docService.findDocSubjectRelationTypes();
-            selectDocSubjectRelationTytpe(relationTypes, docSubject.getDocSubjectRelationTypeFk());
+            if (docSubject != null) {
+                if (docSubject.getDocSubjectTypeFk() == SUBJECT_TYPE_PERSON) {
+                    Person person = docService.findPersonById(docSubject.getSubjectFk());
+                    docSubject.setFullName(person.getFullName());
+                } else {
+                    Enterprise enterprise = docService.findEnterpriseById(docSubject.getSubjectFk());
+                    docSubject.setFullName(enterprise.getFullName());
+                }
+            }
+            selectDocSubjectRelationTytpe(relationTypes, docSubject != null ? docSubject.getDocSubjectRelationTypeFk() : null);
+            
+            
 
             model.put("document", document);
             model.put("docType", docType);
+            model.put("docSubject", docSubject);
             model.put("attributes", docAttributeTypes);
             model.put("docStatusTypesList", statusTypes);
             model.put("docCatalogList", catalogs);
-            model.put("docSubjectRelationTypes", docService.findDocSubjectRelationTypes());
+            model.put("docSubjectRelationTypes", relationTypes);
             model.put("userId", userId);
         }
         return new ModelAndView("document", model);
     }
     
     private void selectDocattributeTypes(List<DocAttributeType> docAttributeTypes, List<DocAttribute> attributes){
-        DocAttributeType newDocAttributetype = new DocAttributeType(0L);
-        newDocAttributetype.setTypeName("not selected");
-        docAttributeTypes.add(newDocAttributetype);
-        for (DocAttribute attribute : attributes) {
-            newDocAttributetype = findAttributeById(docAttributeTypes, attribute.getDocAttributeTypeFk());
-            if (newDocAttributetype.getDataTypeFk() == DATA_TYPE_CHOICE) {
-                List<AtrTypeSelectionValue> atsvs = docService.findAtrTypeSelectionValuesByDocAttributeTypeId(newDocAttributetype.getDocAttributeType());
-                selectAtrTypeSelectionValue(atsvs, newDocAttributetype.getDefaultSelectionIdFk());
+        for (DocAttributeType attributeType : docAttributeTypes) {
+            DocAttribute newDocAttribute = findAttributeById(attributes, attributeType.getDocAttributeType());
+            if (attributeType.getDataTypeFk() == DATA_TYPE_CHOICE) {
+                List<AtrTypeSelectionValue> atsvs = docService.findAtrTypeSelectionValuesByDocAttributeTypeId(attributeType.getDocAttributeType());
+                selectAtrTypeSelectionValue(atsvs, attributeType.getDefaultSelectionIdFk());
+                attributeType.setSelectionValues(atsvs);
             } else {
-                newDocAttributetype.setValue(attribute.getValueText());
+                attributeType.setValue(newDocAttribute.getValueText());
             }
         }
         
     }
     
-    private static void selectDocStatusType(List<DocStatusType> statusTypes , long idToSelect){
+    private static void selectDocStatusType(List<DocStatusType> statusTypes , Long idToSelect){
+        DocStatusType newStatusType = new DocStatusType(0L);
+        newStatusType.setTypeName("not selected");
+        newStatusType.setSelected(idToSelect == null);
         for (DocStatusType statusType : statusTypes) {
-            if (statusType.getDocStatusType() == idToSelect) {
+            if (statusType.getDocStatusType().equals(idToSelect)) {
                 statusType.setSelected(true);
             }
         }
@@ -320,20 +363,27 @@ public class DocumentsController {
         }
     }
     
-    private static void selectDocSubjectRelationTytpe(List<DocSubjectRelationType> catalogs , long idToSelect){
+    private static void selectDocSubjectRelationTytpe(List<DocSubjectRelationType> catalogs , Long idToSelect){
+        DocSubjectRelationType dsrt = new DocSubjectRelationType(0L);
+        dsrt.setTypeName("not selected");
+        dsrt.setSelected(idToSelect == null);
         for (DocSubjectRelationType statusType : catalogs) {
-            if (statusType.getDocSubjectRelationType()== idToSelect) {
+            if (statusType.getDocSubjectRelationType().equals(idToSelect)) {
                 statusType.setSelected(true);
             }
         }
+        catalogs.add(dsrt);
     }
     
-    private static void selectAtrTypeSelectionValue(List<AtrTypeSelectionValue> catalogs , long idToSelect){
+    private static void selectAtrTypeSelectionValue(List<AtrTypeSelectionValue> catalogs , Long idToSelect){
+        AtrTypeSelectionValue  atsv = new AtrTypeSelectionValue(0L);
+        atsv.setValueText("not selected");
         for (AtrTypeSelectionValue statusType : catalogs) {
-            if (statusType.getAtrTypeSelectionValue()== idToSelect) {
+            if (statusType.getAtrTypeSelectionValue().equals(idToSelect)) {
                 statusType.setSelected(true);
             }
         }
+        catalogs.add(atsv);
     }
     
     private static DocType findDoctypeFromListById(List<DocType> docTypes, Long docTypeId){
@@ -591,12 +641,13 @@ public class DocumentsController {
         return docsJSON;
     }
 
-    private DocAttributeType findAttributeById(List<DocAttributeType> docAttributeTypes, long docAttributeTypeFk) {
-        for (DocAttributeType docAttributeType : docAttributeTypes) {
-            if (docAttributeType.getDocAttributeType() == docAttributeTypeFk) {
-                return docAttributeType;
+    private DocAttribute findAttributeById(List<DocAttribute> docAttributes, long docAttributeTypeFk) {
+        for (DocAttribute docAttribute : docAttributes) {
+            if (docAttribute.getDocAttributeTypeFk() == docAttributeTypeFk) {
+                return docAttribute;
             }
         }
         return null;
     }
+
 }

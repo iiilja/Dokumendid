@@ -60,6 +60,12 @@ public class DocSubjectRelationType implements Serializable {
         this.typeName = typeName;
     }
 
+    public boolean isSelected() {
+        return selected;
+    }
+    
+    
+
     @Override
     public int hashCode() {
         int hash = 0;

@@ -126,7 +126,7 @@
         
         function searchPerson(){
             var name = $("#subjectInput").val();
-            var url = myHost + "searchSubject";
+            var url = myHost + "/searchSubject";
             $.getJSON(url,{subjectName : name} ,function (data) {
                 if(data.OK){
                     console.log("OK");

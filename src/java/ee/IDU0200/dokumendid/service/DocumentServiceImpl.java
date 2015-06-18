@@ -239,8 +239,12 @@ public class DocumentServiceImpl implements DocumentService{
     @Override
     public DocStatus findDocstatusByDocId(long id) {
         Session session = sessionFactory.getCurrentSession();
-        return (DocStatus) session.getNamedQuery("DocStatus.findByDocumentFk").
-                setParameter("documentFk", id).uniqueResult();
+        Query query = session.createSQLQuery(
+            "SELECT * " +
+            "FROM doc_status " +
+            "WHERE document_fk = :documentFk AND status_end IS NULL").addEntity(DocStatus.class).
+                setParameter("documentFk", id);
+        return (DocStatus) query.uniqueResult();
     }
 
     @Override
