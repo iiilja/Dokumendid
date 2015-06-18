@@ -292,6 +292,11 @@ public class DocumentServiceImpl implements DocumentService{
     public void updateEntity(Object object) {
         sessionFactory.getCurrentSession().update(object);
     }
+
+    @Override
+    public void deleteEntity(Object object) {
+        sessionFactory.getCurrentSession().delete(object);
+    }
     
     
 

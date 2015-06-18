@@ -156,21 +156,47 @@ public class DocumentsController {
         if (errors == null) {
             Document document = createDocument(json, userId);
             docService.updateEntity(document);
-            DocStatus docStatus = createDocStatus(json, document.getDocument(), userId);
-            docService.updateEntity(docStatus);
-            DocumentDocType documentDocType = createDocumentDocType(json, document.getDocument());
-            docService.updateEntity(documentDocType);
-            DocumentDocCatalog documentDocCatalog = createDocumentDocCatalog(json, document.getDocument());
-            docService.updateEntity(documentDocCatalog);
+            DocStatus docStatus = docService.findDocstatusByDocId(document.getDocument());
+            DocStatus docStatusNew = createDocStatus(json, document.getDocument(), userId);
+            if (docStatus == null || !docStatus.getDocStatusTypeFk().equals(docStatusNew.getDocStatusTypeFk())) {
+                docService.saveEntity(docStatusNew);
+                if (docStatus!=null) {
+                    docStatus.setStatusEnd(new Date());
+                    docService.updateEntity(docStatus);
+                }
+           }
+            DocumentDocType documentDocType = docService.findDocumentDocTypeByDocumentId(document.getDocument());
+            
+            
+            DocumentDocCatalog documentDocCatalog = docService.findDocumentDocCatalogByDocumentId(document.getDocument());
+            DocumentDocCatalog documentDocCatalogNew = createDocumentDocCatalog(json, document.getDocument());
+            if (!documentDocCatalog.getDocCatalogFk().equals(documentDocCatalogNew.getDocCatalogFk())) {
+                documentDocCatalogNew.setDocumentDocCatalog(documentDocCatalog.getDocumentDocCatalog());
+                docService.updateEntity(documentDocCatalogNew);
+            }
             DocCatalog docCatalog = docService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
             docCatalog.setContentUpdated(new Date());
             docCatalog.setContentUpdatedBy(userId);
             docService.updateEntity(docCatalog);
-            DocSubject docSubject = createDocSubjectFromJSON(json,document.getDocument());
-            docService.saveEntity(docSubject);
+            
+            DocSubject docSubject = docService.findDocsubjectByDocumentId(document.getDocument());
+            DocSubject docSubjectNew = createDocSubjectFromJSON(json,document.getDocument());
+            if ( docSubject == null|| !docSubject.getDocSubjectTypeFk().equals(docSubjectNew.getDocSubjectTypeFk()) && !docSubject.getSubjectFk().equals(docSubjectNew.getSubjectFk())) {
+                if (docSubject!= null) {
+                    docSubjectNew.setDocSubject(docSubject.getDocSubject());
+                    docService.updateEntity(docSubjectNew);
+                } else {
+                    docService.saveEntity(docSubjectNew);
+                }
+            }
+            
+            List<DocAttribute> docAttributesOld = docService.findDocAttributesByDocId(document.getDocument());
             List<DocAttribute> docAttributes = createDocAttributesFromJSON(json,document.getDocument());
+            for (DocAttribute docAttribute : docAttributesOld) {
+                docService.deleteEntity(docAttribute);
+            }
             for (DocAttribute docAttribute : docAttributes) {
-                docService.updateEntity(docAttribute);
+                docService.saveEntity(docAttribute);
             }
             json = new JSONObject();
             json.put("OK", true);
@@ -338,7 +364,7 @@ public class DocumentsController {
                 selectAtrTypeSelectionValue(atsvs, attributeType.getDefaultSelectionIdFk());
                 attributeType.setSelectionValues(atsvs);
             } else {
-                attributeType.setValue(newDocAttribute.getValueText());
+                attributeType.setValue(newDocAttribute != null ?newDocAttribute.getValueText(): "");
             }
         }
         
@@ -584,6 +610,9 @@ public class DocumentsController {
 
     private Document createDocument(JSONObject json, long userId) throws JSONException {
         Document document = new Document();
+        if (json.has("docId")) {
+            document.setDocument(Long.parseLong(json.getString("docId")));
+        }
         document.setName(json.getString("docName"));
         document.setDescription(json.getString("docDescription"));
         document.setDocStatusTypeFk(Long.parseLong(json.getString("docStatusType")));

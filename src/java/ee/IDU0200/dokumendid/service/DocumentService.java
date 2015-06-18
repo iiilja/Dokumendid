@@ -70,6 +70,8 @@ public interface DocumentService {
     public Object saveEntity(Object object);
 
     public void updateEntity(Object object);
+    
+    public void deleteEntity(Object object);
 
     public DocStatus findDocstatusByDocId(long id);
 

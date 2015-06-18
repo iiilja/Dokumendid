@@ -17,6 +17,7 @@
             Document type is <input type="text" name="docTypeId" value="${docType.typeName}" disabled>
             
             <table border=1 cellpadding=2 cellspacing=1>
+                <tr><td>Document id</td><td><input type="text" name="docId" value="${document.document}"  readonly="readonly"/></td></tr>
                 <tr><td>Document name<b class="errorsClass" id="docName"></td><td><input type="text" name="docName" value="${document.name}" /></td></tr>
                 <tr><td>Document description<b class="errorsClass" id="docDescription"></td><td><input type="text" name="docDescription" value="${document.description}"/></td></tr>
                 <tr>
@@ -117,7 +118,7 @@
         
         function searchPerson(){
             var name = $("#subjectInput").val();
-            var url = myHost + "searchSubject";
+            var url = myHost + "/searchSubject";
             $.getJSON(url,{subjectName : name} ,function (data) {
                 if(data.OK){
                     console.log("OK");
