@@ -19,6 +19,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 
 /**
  *
@@ -46,7 +47,7 @@ public class DocumentDocCatalog implements Serializable {
     @Column(name = "catalog_time")
     @Temporal(TemporalType.TIMESTAMP)
     private Date catalogTime;
-
+    
     public DocumentDocCatalog() {
     }
 

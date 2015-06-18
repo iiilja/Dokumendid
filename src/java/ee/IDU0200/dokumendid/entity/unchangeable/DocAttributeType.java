@@ -50,8 +50,15 @@ public class DocAttributeType implements Serializable {
     @Column(name = "multiple_attributes")
     private String multipleAttributes;
     
+    
+    
     @Transient
     private List<AtrTypeSelectionValue> selectionValues;
+    
+    @Transient
+    private String value;
+    
+    
 
     public DocAttributeType() {
     }
@@ -99,6 +106,16 @@ public class DocAttributeType implements Serializable {
     public void setDataTypeFk(Short dataTypeFk) {
         this.dataTypeFk = dataTypeFk;
     }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+    
+    
 
     @Override
     public int hashCode() {

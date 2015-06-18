@@ -5,8 +5,13 @@
  */
 package ee.IDU0200.dokumendid.service;
 
+import ee.IDU0200.dokumendid.entity.DocAttribute;
 import ee.IDU0200.dokumendid.entity.DocCatalog;
+import ee.IDU0200.dokumendid.entity.DocStatus;
+import ee.IDU0200.dokumendid.entity.DocSubject;
 import ee.IDU0200.dokumendid.entity.Document;
+import ee.IDU0200.dokumendid.entity.DocumentDocCatalog;
+import ee.IDU0200.dokumendid.entity.DocumentDocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.AtrTypeSelectionValue;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocAttributeType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
@@ -230,6 +235,49 @@ public class DocumentServiceImpl implements DocumentService{
         query.setParameter("lastName", employeeLastName);
         return (Employee) query.uniqueResult();
     }
+
+    @Override
+    public DocStatus findDocstatusByDocId(long id) {
+        Session session = sessionFactory.getCurrentSession();
+        return (DocStatus) session.getNamedQuery("DocStatus.findByDocumentFk").
+                setParameter("documentFk", id).uniqueResult();
+    }
+
+    @Override
+    public DocumentDocType findDocumentDocTypeByDocumentId(long id) {
+        Session session = sessionFactory.getCurrentSession();
+        return (DocumentDocType) session.getNamedQuery("DocumentDocType.findByDocumentFk").
+                setParameter("documentFk", id).uniqueResult();
+    }
+
+    @Override
+    public DocumentDocCatalog findDocumentDocCatalogByDocumentId(long id) {
+        Session session = sessionFactory.getCurrentSession();
+        return (DocumentDocCatalog) session.getNamedQuery("DocumentDocCatalog.findByDocumentFk").
+                setParameter("documentFk", id).uniqueResult();
+    }
+
+    @Override
+    public DocSubject findDocsubjectByDocumentId(long id) {
+        Session session = sessionFactory.getCurrentSession();
+        return (DocSubject) session.getNamedQuery("DocSubject.findByDocumentFk").
+                setParameter("documentFk", id).uniqueResult();
+    }
+
+    @Override
+    public Enterprise findEnterpriseById(long id) {
+        Session session = sessionFactory.getCurrentSession();
+        return (Enterprise) session.getNamedQuery("Enterprise.findByEnterprise").
+                setParameter("enterprise", id).uniqueResult();
+    }
+
+    @Override
+    public List<DocAttribute> findDocAttributesByDocId(long id) {
+        Session session = sessionFactory.getCurrentSession();
+        return session.getNamedQuery("DocAttribute.findByDocumentFk").
+                setParameter("documentFk", id).list();
+    }
+    
 
     @Override
     public Object saveEntity(Object object) {

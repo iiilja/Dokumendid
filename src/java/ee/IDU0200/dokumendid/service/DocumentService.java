@@ -5,8 +5,13 @@
  */
 package ee.IDU0200.dokumendid.service;
 
+import ee.IDU0200.dokumendid.entity.DocAttribute;
 import ee.IDU0200.dokumendid.entity.DocCatalog;
+import ee.IDU0200.dokumendid.entity.DocStatus;
+import ee.IDU0200.dokumendid.entity.DocSubject;
 import ee.IDU0200.dokumendid.entity.Document;
+import ee.IDU0200.dokumendid.entity.DocumentDocCatalog;
+import ee.IDU0200.dokumendid.entity.DocumentDocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.AtrTypeSelectionValue;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocAttributeType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
@@ -65,6 +70,19 @@ public interface DocumentService {
     public Object saveEntity(Object object);
 
     public void updateEntity(Object object);
+
+    public DocStatus findDocstatusByDocId(long id);
+
+    public DocumentDocType findDocumentDocTypeByDocumentId(long id);
+
+    public DocumentDocCatalog findDocumentDocCatalogByDocumentId(long id);
+
+    public DocSubject findDocsubjectByDocumentId(long id);
+
+    public Enterprise findEnterpriseById(long subjectFk);
+
+    public List<DocAttribute> findDocAttributesByDocId(long id);
+
 
 
 }

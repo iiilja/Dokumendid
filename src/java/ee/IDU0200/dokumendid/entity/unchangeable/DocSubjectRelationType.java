@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  *
@@ -32,6 +33,9 @@ public class DocSubjectRelationType implements Serializable {
     private Long docSubjectRelationType;
     @Column(name = "type_name")
     private String typeName;
+    
+    @Transient
+    private boolean selected;
 
     public DocSubjectRelationType() {
     }
@@ -79,6 +83,10 @@ public class DocSubjectRelationType implements Serializable {
     @Override
     public String toString() {
         return "ee.IDU0200.dokumendid.entity.unchangeable.DocSubjectRelationType[ docSubjectRelationType=" + docSubjectRelationType + " ]";
+    }
+
+    public void setSelected(boolean b) {
+        this.selected = b;
     }
     
 }

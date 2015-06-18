@@ -15,6 +15,7 @@ import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  *
@@ -41,6 +42,9 @@ public class AtrTypeSelectionValue implements Serializable {
     private String valueText;
     @Column(name = "orderby")
     private Long orderby;
+    
+    @Transient
+    private boolean selected;
 
     public AtrTypeSelectionValue() {
     }
@@ -80,6 +84,15 @@ public class AtrTypeSelectionValue implements Serializable {
     public void setOrderby(Long orderby) {
         this.orderby = orderby;
     }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean b) {
+        this.selected = b;
+    }
+    
 
     @Override
     public int hashCode() {

@@ -166,5 +166,9 @@ public class Person implements Serializable {
     public String toString() {
         return "ee.IDU0200.dokumendid.entity.unchangeable.Person[ person=" + person + " ]";
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
     
 }

@@ -15,6 +15,7 @@ import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  *
@@ -35,6 +36,9 @@ public class DocStatusType implements Serializable {
     private Long docStatusType;
     @Column(name = "type_name")
     private String typeName;
+    
+    @Transient
+    private boolean selected;
 
     public DocStatusType() {
     }
@@ -78,6 +82,17 @@ public class DocStatusType implements Serializable {
         }
         return true;
     }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+    
+    
+    
 
     @Override
     public String toString() {

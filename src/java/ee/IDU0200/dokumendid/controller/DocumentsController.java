@@ -15,6 +15,7 @@ import ee.IDU0200.dokumendid.entity.DocumentDocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.AtrTypeSelectionValue;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocAttributeType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocStatusType;
+import ee.IDU0200.dokumendid.entity.unchangeable.DocSubjectRelationType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocType;
 import ee.IDU0200.dokumendid.entity.unchangeable.DocTypeAttribute;
 import ee.IDU0200.dokumendid.entity.unchangeable.Employee;
@@ -66,7 +67,7 @@ public class DocumentsController {
     private static final int SUBJECT_TYPE_ENTERPRISE = 2;
     
     @Autowired(required=true)
-    private DocumentService documentService;
+    private DocumentService docService;
     
     
     @RequestMapping(value = "/{userId}/createForm")
@@ -75,32 +76,32 @@ public class DocumentsController {
             @RequestParam(required = false) Long docTypeId,
             HttpServletRequest request,
             HttpServletResponse response){
-        List<DocType> docTypes = documentService.findAllDocTypes();
+        List<DocType> docTypes = docService.findAllDocTypes();
         
         System.out.println("DocTypes list contains " + docTypes.size());
         
         DocType docType = findDoctypeFromListById(docTypes, docTypeId);
         if (docTypeId == null) {
-            docType = documentService.findDocTypeFirst();
+            docType = docService.findDocTypeFirst();
         }
         docType.setSelected(true);
         Map<String, Object> model = new HashMap<>();
         model.put("docType", docType);
         model.put("docTypesList", docTypes);
-        List<DocAttributeType> attributes = documentService.findDocAttributeTypesByDocTypeId(docType.getDocType());
+        List<DocAttributeType> attributes = docService.findDocAttributeTypesByDocTypeId(docType.getDocType());
         System.out.println("attributes list contains " + attributes.size());
         for (DocAttributeType attribute : attributes) {
             if (attribute.getDataTypeFk() == DATA_TYPE_CHOICE) {
                 List<AtrTypeSelectionValue> selectionValues 
-                        = documentService.findAtrTypeSelectionValuesByDocAttributeTypeId(attribute.getDocAttributeType());
+                        = docService.findAtrTypeSelectionValuesByDocAttributeTypeId(attribute.getDocAttributeType());
                 attribute.setSelectionValues(selectionValues);
             }
         }
         
         model.put("attributes", attributes);
-        model.put("docStatusTypesList", documentService.findDocStatusTypes());
-        model.put("docCatalogList", documentService.findDocCatalogs());
-        model.put("docSubjectRelationTypes", documentService.findDocSubjectRelationTypes());
+        model.put("docStatusTypesList", docService.findDocStatusTypes());
+        model.put("docCatalogList", docService.findDocCatalogs());
+        model.put("docSubjectRelationTypes", docService.findDocSubjectRelationTypes());
         model.put("userId", userId);
         return new ModelAndView("createDocumentForm",model);
     }
@@ -116,22 +117,22 @@ public class DocumentsController {
         
         if (errors == null) {
             Document document = createDocument(json, userId);
-            documentService.saveEntity(document);
+            docService.saveEntity(document);
             DocStatus docStatus = createDocStatus(json, document.getDocument(), userId);
-            documentService.saveEntity(docStatus);
+            docService.saveEntity(docStatus);
             DocumentDocType documentDocType = createDocumentDocType(json, document.getDocument());
-            documentService.saveEntity(documentDocType);
+            docService.saveEntity(documentDocType);
             DocumentDocCatalog documentDocCatalog = createDocumentDocCatalog(json, document.getDocument());
-            documentService.saveEntity(documentDocCatalog);
-            DocCatalog docCatalog = documentService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
+            docService.saveEntity(documentDocCatalog);
+            DocCatalog docCatalog = docService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
             docCatalog.setContentUpdated(new Date());
             docCatalog.setContentUpdatedBy(userId);
-            documentService.updateEntity(docCatalog);
+            docService.updateEntity(docCatalog);
             DocSubject docSubject = createDocSubjectFromJSON(json,document.getDocument());
-            documentService.saveEntity(docSubject);
+            docService.saveEntity(docSubject);
             List<DocAttribute> docAttributes = createDocAttributesFromJSON(json,document.getDocument());
             for (DocAttribute docAttribute : docAttributes) {
-                documentService.saveEntity(docAttribute);
+                docService.saveEntity(docAttribute);
             }
             json = new JSONObject();
             json.put("OK", true);
@@ -151,14 +152,14 @@ public class DocumentsController {
             HttpServletRequest request,
             HttpServletResponse response) throws JSONException{
         JSONObject json = new JSONObject();
-        Person person = documentService.findPersonWithLastName(subjectName);
+        Person person = docService.findPersonWithLastName(subjectName);
         if (person != null) {
             json.put("OK", true);
             json.put("subjectType", SUBJECT_TYPE_PERSON);
             json.put("subjectId", person.getPerson());
             json.put("subjectName", person.getFirstName() + " " + person.getLastName());
         } else {
-            Enterprise enterprise = documentService.findEnterpriseByName(subjectName);
+            Enterprise enterprise = docService.findEnterpriseByName(subjectName);
             if (enterprise != null) {
                 json.put("OK", true);
                 json.put("subjectType", SUBJECT_TYPE_ENTERPRISE);
@@ -177,9 +178,9 @@ public class DocumentsController {
             HttpServletRequest request,
             HttpServletResponse response) throws JSONException{
         JSONObject json = new JSONObject();
-        Employee employee = documentService.findEmployeeWithLastName(employeeName);
+        Employee employee = docService.findEmployeeWithLastName(employeeName);
         if (employee != null) {
-            Person person = documentService.findPersonById(employee.getPersonFk());
+            Person person = docService.findPersonById(employee.getPersonFk());
             json.put("OK", true);
             json.put("changedEmployeeId", employee.getEmployee());
             json.put("changedEmployeeName", person.getFirstName() + " " + person.getLastName());
@@ -194,18 +195,18 @@ public class DocumentsController {
             @RequestParam(required = false) Long docTypeId,
             HttpServletRequest request,
             HttpServletResponse response){
-        List<DocType> docTypes = documentService.findAllDocTypes();
+        List<DocType> docTypes = docService.findAllDocTypes();
         
         DocType docType = findDoctypeFromListById(docTypes, docTypeId);
         Map<String, Object> model = new HashMap<>();
         if (docType != null) {
             docType.setSelected(true);
             model.put("docType", docType);
-            List<DocAttributeType> attributes = documentService.findDocAttributeTypesByDocTypeId(docType.getDocType());
+            List<DocAttributeType> attributes = docService.findDocAttributeTypesByDocTypeId(docType.getDocType());
             for (DocAttributeType attribute : attributes) {
                 if (attribute.getDataTypeFk() == DATA_TYPE_CHOICE) {
                     List<AtrTypeSelectionValue> selectionValues 
-                            = documentService.findAtrTypeSelectionValuesByDocAttributeTypeId(attribute.getDocAttributeType());
+                            = docService.findAtrTypeSelectionValuesByDocAttributeTypeId(attribute.getDocAttributeType());
                     attribute.setSelectionValues(selectionValues);
                 }
             }
@@ -216,9 +217,9 @@ public class DocumentsController {
         noDocType.setSelected(docType == null);
         docTypes.add(noDocType);
         model.put("docTypesList", docTypes);
-        model.put("docStatusTypesList", documentService.findDocStatusTypes());
-        model.put("docCatalogList", documentService.findDocCatalogs());
-        model.put("docSubjectRelationTypes", documentService.findDocSubjectRelationTypes());
+        model.put("docStatusTypesList", docService.findDocStatusTypes());
+        model.put("docCatalogList", docService.findDocCatalogs());
+        model.put("docSubjectRelationTypes", docService.findDocSubjectRelationTypes());
         model.put("userId", userId);
         return new ModelAndView("searchDocumentForm",model);
     }
@@ -236,18 +237,106 @@ public class DocumentsController {
     }
     
     @RequestMapping(value = "/{userId}/document")
-    public @ResponseBody String findDocuments(
+    public ModelAndView getDocument(
             @PathVariable("userId") String userId,
             @RequestParam long id,
             HttpServletRequest request,
             HttpServletResponse response) throws JSONException{
-//        List<Document> docs = searchDocument(new JSONObject(documentData));
-//        System.out.println(docs.size());
-//        response.setStatus(HttpServletResponse.SC_OK);
-        return "";
+        Document document = docService.findDocumentById(id);
+        
+        Map<String, Object> model = new HashMap<>();
+        
+        if (document != null) {
+            
+            DocumentDocType documentDocType = docService.findDocumentDocTypeByDocumentId(id);
+            
+            List<DocType> docTypes = docService.findAllDocTypes();
+            DocType docType = findDoctypeFromListById(docTypes, documentDocType.getDocTypeFk());
+            
+            List<DocAttributeType> docAttributeTypes = docService.findDocAttributeTypesByDocTypeId(documentDocType.getDocTypeFk());
+            selectDocattributeTypes(docAttributeTypes, docService.findDocAttributesByDocId(id));
+            
+            DocStatus docStatus = docService.findDocstatusByDocId(id);
+            List<DocStatusType> statusTypes = docService.findDocStatusTypes();
+            selectDocStatusType(statusTypes, docStatus.getDocStatusTypeFk());
+            
+            DocumentDocCatalog documentDocCatalog = docService.findDocumentDocCatalogByDocumentId(id);
+            DocCatalog docCatalog = docService.findDocCatalogById(documentDocCatalog.getDocCatalogFk());
+            List<DocCatalog> catalogs = docService.findDocCatalogs();
+            selectDocCatalog(catalogs, docCatalog.getDocCatalog());
+            
+            DocSubject docSubject = docService.findDocsubjectByDocumentId(id);
+            if (docSubject.getDocSubjectTypeFk() == SUBJECT_TYPE_PERSON) {
+                Person person = docService.findPersonById(docSubject.getSubjectFk());
+                docSubject.setFullName(person.getFullName());
+            } else {
+                Enterprise enterprise = docService.findEnterpriseById(docSubject.getSubjectFk());
+                docSubject.setFullName(enterprise.getFullName());
+            }
+            
+            List<DocSubjectRelationType> relationTypes = docService.findDocSubjectRelationTypes();
+            selectDocSubjectRelationTytpe(relationTypes, docSubject.getDocSubjectRelationTypeFk());
+
+            model.put("document", document);
+            model.put("docType", docType);
+            model.put("attributes", docAttributeTypes);
+            model.put("docStatusTypesList", statusTypes);
+            model.put("docCatalogList", catalogs);
+            model.put("docSubjectRelationTypes", docService.findDocSubjectRelationTypes());
+            model.put("userId", userId);
+        }
+        return new ModelAndView("document", model);
     }
     
-    private DocType findDoctypeFromListById(List<DocType> docTypes, Long docTypeId){
+    private void selectDocattributeTypes(List<DocAttributeType> docAttributeTypes, List<DocAttribute> attributes){
+        DocAttributeType newDocAttributetype = new DocAttributeType(0L);
+        newDocAttributetype.setTypeName("not selected");
+        docAttributeTypes.add(newDocAttributetype);
+        for (DocAttribute attribute : attributes) {
+            newDocAttributetype = findAttributeById(docAttributeTypes, attribute.getDocAttributeTypeFk());
+            if (newDocAttributetype.getDataTypeFk() == DATA_TYPE_CHOICE) {
+                List<AtrTypeSelectionValue> atsvs = docService.findAtrTypeSelectionValuesByDocAttributeTypeId(newDocAttributetype.getDocAttributeType());
+                selectAtrTypeSelectionValue(atsvs, newDocAttributetype.getDefaultSelectionIdFk());
+            } else {
+                newDocAttributetype.setValue(attribute.getValueText());
+            }
+        }
+        
+    }
+    
+    private static void selectDocStatusType(List<DocStatusType> statusTypes , long idToSelect){
+        for (DocStatusType statusType : statusTypes) {
+            if (statusType.getDocStatusType() == idToSelect) {
+                statusType.setSelected(true);
+            }
+        }
+    }
+    
+    private static void selectDocCatalog(List<DocCatalog> catalogs , long idToSelect){
+        for (DocCatalog statusType : catalogs) {
+            if (statusType.getDocCatalog() == idToSelect) {
+                statusType.setSelected(true);
+            }
+        }
+    }
+    
+    private static void selectDocSubjectRelationTytpe(List<DocSubjectRelationType> catalogs , long idToSelect){
+        for (DocSubjectRelationType statusType : catalogs) {
+            if (statusType.getDocSubjectRelationType()== idToSelect) {
+                statusType.setSelected(true);
+            }
+        }
+    }
+    
+    private static void selectAtrTypeSelectionValue(List<AtrTypeSelectionValue> catalogs , long idToSelect){
+        for (AtrTypeSelectionValue statusType : catalogs) {
+            if (statusType.getAtrTypeSelectionValue()== idToSelect) {
+                statusType.setSelected(true);
+            }
+        }
+    }
+    
+    private static DocType findDoctypeFromListById(List<DocType> docTypes, Long docTypeId){
         if (docTypeId == null) {
             return null;
         }
@@ -266,7 +355,7 @@ public class DocumentsController {
         if (json.has("docId")){ 
             try {
                 long id = Long.parseLong(json.getString("docId"));
-                Document document = documentService.findDocumentById(id);
+                Document document = docService.findDocumentById(id);
                 if (document != null) documents.add(document);
             } catch (NumberFormatException e){
                 errors.put("docId", "Specify docId");
@@ -276,7 +365,7 @@ public class DocumentsController {
         if (json.has("docStatusType")){ 
             try {
                 long id = Long.parseLong(json.getString("docStatusType"));
-                documents.addAll(documentService.findDocumentsByDocStatusType(id));
+                documents.addAll(docService.findDocumentsByDocStatusType(id));
             } catch (NumberFormatException e){
                 errors.put("docStatusType", "Specify docStatusType");
             }
@@ -285,25 +374,25 @@ public class DocumentsController {
         if (json.has("docCatalog")){ 
             try {
                 long id = Long.parseLong(json.getString("docCatalog"));
-                documents.addAll(documentService.findDocumentsByDocCatalog(id));
+                documents.addAll(docService.findDocumentsByDocCatalog(id));
             } catch (NumberFormatException e){
                 errors.put("docCatalog", "Specify docCatalog");
             }
         }
 //        dokumendi nime järgi 
         if (json.has("docName") ){
-            documents.addAll(documentService.findDocumentsByName(json.getString("docName")));
+            documents.addAll(docService.findDocumentsByName(json.getString("docName")));
         }
 //        dokumendi kirjelduse järgi
         if (json.has("docDescription") ){
-            documents.addAll(documentService.findDocumentsByDesctiption(json.getString("docDescription")));
+            documents.addAll(docService.findDocumentsByDesctiption(json.getString("docDescription")));
         }
 //        dokumentidega seotud subjektide nime järgi ([enterpise].name, [person].last_name)
         if (json.has("subjectId") && json.has("subjectType")){
             try {
                 long subjectId = Long.parseLong(json.getString("subjectId"));
                 long subjectType = Long.parseLong(json.getString("subjectType"));
-                documents.addAll(documentService.findDocumentsByDocSubject(subjectId, subjectType));
+                documents.addAll(docService.findDocumentsByDocSubject(subjectId, subjectType));
             } catch (NumberFormatException e){
                 errors.put("docCatalog", "Specify docCatalog");
             }
@@ -312,13 +401,13 @@ public class DocumentsController {
         if (json.has("changedEmployeeId")){
             try {
                 long changedEmployeeId = Long.parseLong(json.getString("changedEmployeeId"));
-                documents.addAll(documentService.findDocumentsByChanger(changedEmployeeId));
+                documents.addAll(docService.findDocumentsByChanger(changedEmployeeId));
             } catch (NumberFormatException e){
                 errors.put("docCatalog", "Specify docCatalog");
             }
         }
         if (json.has("someAttributeText")){
-            documents.addAll(documentService.findDocumentsBySomeAttributeText(json.getString("someAttributeText")));
+            documents.addAll(docService.findDocumentsBySomeAttributeText(json.getString("someAttributeText")));
         }
         return ListCleaner.cleanListFromEqualObjects(documents);
     }
@@ -353,10 +442,10 @@ public class DocumentsController {
         }
         if (json.has("docTypeId")) {
             long docTypeId = Long.parseLong(json.getString("docTypeId"));
-            DocType docType = documentService.findDocTypeById(docTypeId);
-            List<DocAttributeType> attributes = documentService.findDocAttributeTypesByDocTypeId(docType.getDocType());
+            DocType docType = docService.findDocTypeById(docTypeId);
+            List<DocAttributeType> attributes = docService.findDocAttributeTypesByDocTypeId(docType.getDocType());
             for (DocAttributeType attribute : attributes) {
-                DocTypeAttribute docTypeAttribute = documentService.findDocTypeAttributeTypeBy(docTypeId, attribute.getDocAttributeType());
+                DocTypeAttribute docTypeAttribute = docService.findDocTypeAttributeTypeBy(docTypeId, attribute.getDocAttributeType());
                 if (REQUIRED_FALSE.equals(docTypeAttribute.getRequired())){
                     System.out.println(attribute.getTypeName() + " not required");
                     continue;
@@ -404,8 +493,8 @@ public class DocumentsController {
 
     private List<DocAttribute> createDocAttributesFromJSON(JSONObject json, long documentFk) throws JSONException {
         long docTypeId = Long.parseLong(json.getString("docTypeId"));
-        DocType docType = documentService.findDocTypeById(docTypeId);
-        List<DocAttributeType> attributeTypes = documentService.findDocAttributeTypesByDocTypeId(docType.getDocType());
+        DocType docType = docService.findDocTypeById(docTypeId);
+        List<DocAttributeType> attributeTypes = docService.findDocAttributeTypesByDocTypeId(docType.getDocType());
         List<DocAttribute> attributes = new ArrayList<>();
         for (DocAttributeType attributeType : attributeTypes) {
             String docAttributeTypeId = attributeType.getDocAttributeType() + "";
@@ -413,7 +502,7 @@ public class DocumentsController {
             
             String data = json.getString(docAttributeTypeId);
             
-            DocTypeAttribute docTypeAttribute = documentService.findDocTypeAttributeTypeBy(docTypeId, attributeType.getDocAttributeType());
+            DocTypeAttribute docTypeAttribute = docService.findDocTypeAttributeTypeBy(docTypeId, attributeType.getDocAttributeType());
             
             DocAttribute attribute = new DocAttribute();
             attribute.setDocAttributeTypeFk(attributeType.getDocAttributeType());
@@ -424,7 +513,7 @@ public class DocumentsController {
             attribute.setOrderby(docTypeAttribute.getOrderby());
             if (attributeType.getDataTypeFk() == DATA_TYPE_CHOICE) {
                 attribute.setAtrTypeSelectionValueFk(Long.parseLong(data));
-                AtrTypeSelectionValue value = documentService.findAtrTypeSelectionValueById(Long.parseLong(data));
+                AtrTypeSelectionValue value = docService.findAtrTypeSelectionValueById(Long.parseLong(data));
                 data = value.getValueText();
             } else if (attributeType.getDataTypeFk() == DATA_TYPE_NUMBER) {
                 attribute.setValueNumber(Integer.parseInt(data));
@@ -500,5 +589,14 @@ public class DocumentsController {
         }
         docsJSON.put("documents", docsArray);
         return docsJSON;
+    }
+
+    private DocAttributeType findAttributeById(List<DocAttributeType> docAttributeTypes, long docAttributeTypeFk) {
+        for (DocAttributeType docAttributeType : docAttributeTypes) {
+            if (docAttributeType.getDocAttributeType() == docAttributeTypeFk) {
+                return docAttributeType;
+            }
+        }
+        return null;
     }
 }

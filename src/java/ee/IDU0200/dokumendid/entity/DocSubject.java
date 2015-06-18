@@ -16,6 +16,7 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  *
@@ -48,6 +49,9 @@ public class DocSubject implements Serializable {
     private Long subjectFk;
     @Column(name = "note")
     private String note;
+    
+    @Transient
+    private String fullName;
 
     public DocSubject() {
     }
@@ -103,6 +107,16 @@ public class DocSubject implements Serializable {
     public void setNote(String note) {
         this.note = note;
     }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+    
+    
 
     @Override
     public int hashCode() {

@@ -19,6 +19,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 
 /**
  *
@@ -64,6 +65,9 @@ public class DocCatalog implements Serializable {
     private Long upperCatalogFk;
     @Column(name = "folder")
     private String folder;
+    
+    @Transient
+    private boolean selected;
 
     public DocCatalog() {
     }
@@ -152,6 +156,15 @@ public class DocCatalog implements Serializable {
         this.folder = folder;
     }
 
+    public boolean isSelected() {
+        return selected;
+    }
+    
+
+    public void setSelected(boolean b) {
+        this.selected = b;
+    }
+    
     @Override
     public int hashCode() {
         int hash = 0;
@@ -176,5 +189,6 @@ public class DocCatalog implements Serializable {
     public String toString() {
         return "ee.IDU0200.dokumendid.entity.DocCatalog[ docCatalog=" + docCatalog + " ]";
     }
+
     
 }
