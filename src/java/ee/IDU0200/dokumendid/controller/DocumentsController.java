@@ -191,7 +191,9 @@ public class DocumentsController {
             }
             
             List<DocAttribute> docAttributesOld = docService.findDocAttributesByDocId(document.getDocument());
+            System.out.println("old list " + docAttributesOld.size());
             List<DocAttribute> docAttributes = createDocAttributesFromJSON(json,document.getDocument());
+            System.out.println("old list " + docAttributes.size());
             for (DocAttribute docAttribute : docAttributesOld) {
                 docService.deleteEntity(docAttribute);
             }
@@ -574,7 +576,10 @@ public class DocumentsController {
         List<DocAttribute> attributes = new ArrayList<>();
         for (DocAttributeType attributeType : attributeTypes) {
             String docAttributeTypeId = attributeType.getDocAttributeType() + "";
-            if (!json.has(docAttributeTypeId)) continue;
+            if (!json.has(docAttributeTypeId)) {
+                System.out.println("json does not have " + attributeType.getTypeName());
+                continue;
+            }
             
             String data = json.getString(docAttributeTypeId);
             

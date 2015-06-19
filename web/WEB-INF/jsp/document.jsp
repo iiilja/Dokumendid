@@ -106,7 +106,7 @@
             $.getJSON(url,{documentData : formData} ,function (data) {
                 if(data.OK){
                     console.log("OK");
-                    document.location.href = myHost + "/document?id=" + data.docId;
+                    //document.location.href = myHost + "/document?id=" + data.docId;
                 } else {
                     jQuery.each(data, function(name, val) {
                         $("#" + name).append(val);
